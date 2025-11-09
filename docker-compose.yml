@@ -1,0 +1,75 @@
+version: '3.5'
+services:
+  node:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: nodetest
+    volumes:
+      - ./app-files/:/usr/source/app/          # Монтуємо код
+      - /usr/source/app/node_modules
+    expose:
+      - "3000"
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${MY_DB}
+    networks:
+      - frontend_net
+      - backend_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/test-db"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:latest
+    container_name: nginxtest
+    ports:
+      - "81:80"
+    restart: unless-stopped
+    volumes:
+      - ./nginxconf/:/etc/nginx/conf.d:ro
+      - ./app-files/static-files/:/var/www/html
+    networks:
+      - frontend_net
+    depends_on:
+      node:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    volumes:
+      - mysql-node:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MY_DB}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$MYSQL_ROOT_PASSWORD"]
+      interval: 5s       # Перевіряти кожні 5 секунд
+      timeout: 20s       # Тайм-аут 20 секунд
+      retries: 10        # 10 спроб (загальний час очікування близько 100 секун>
+      start_period: 30s
+    networks:
+       - backend_net
+
+networks:
+  backend_net:
+    driver: bridge
+  frontend_net:
+    driver: bridge
+
+volumes:
+   mysql-node:
