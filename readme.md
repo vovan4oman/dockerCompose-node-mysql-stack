@@ -82,7 +82,6 @@ DB_PASSWORD=your_db_password
 DB_HOST=mysql
 ```
 
-*** Ніколи не коміть `.env` файл у Git! Додай його в `.gitignore`.
 
 ### 3. Підготуй файли конфігурації
 
