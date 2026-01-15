@@ -14,7 +14,7 @@
        │
        ▼
  
-     Nginx    │ :81
+     Nginx    │ :80
    (Reverse    
      Proxy)    
  
